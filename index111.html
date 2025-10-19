@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Telegram + NFT Gifts Demo</title>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light { background: #f3f4f6; color: #111; }
+    body.dark { background: #0f1720; color: #fff; }
+
+    .topbar {
+      width: 100%;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: background 0.3s;
+    }
+
+    body.dark .topbar { background: #1a2233; }
+    body.light .topbar { background: #e5e7eb; }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 6px;
+      background: #1e9ef8;
+      color: #fff;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light button { background: #2563eb; color: #fff; }
+
+    .theme-toggle { font-size: 1.2em; padding: 6px 10px; background: #fbbf24; }
+
+    .chatbox {
+      flex-grow: 1;
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      flex-direction: column;
+      margin-top: 10px;
+      border-radius: 10px;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+
+    body.dark .chatbox { background: #111a25; }
+    body.light .chatbox { background: #e5e7eb; }
+
+    .messages { flex-grow: 1; padding: 15px; overflow-y: auto; }
+
+    .message {
+      margin: 6px 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .message.me { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 15px;
+      max-width: 60%;
+      line-height: 1.4;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.dark .bubble { background: #1e9ef8; color: #fff; }
+    body.dark .message.me .bubble { background: #2a82da; }
+    body.light .bubble { background: #2563eb; color: #fff; }
+    body.light .message.me .bubble { background: #1d4ed8; }
+
+    .input-area {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #333;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    body.dark .input-area { background: #1a2233; border-color: #333; }
+    body.light .input-area { background: #f3f4f6; border-color: #d1d5db; }
+
+    .input-area input {
+      flex-grow: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin-right: 8px;
+      outline: none;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.dark .input-area input { background: #111a25; color: #fff; }
+    body.light .input-area input { background: #fff; color: #111; }
+
+    .gifts { padding: 8px; display: flex; justify-content: center; }
+    .gift { margin: 0 5px; cursor: pointer; font-size: 1.6em; transition: transform 0.2s; }
+    .gift:hover { transform: scale(1.2); }
+
+    .log {
+      padding: 8px;
+      font-size: 13px;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      max-height: 120px;
+      width: 100%;
+      max-width: 700px;
+      border-top: 1px solid #333;
+      transition: background 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    body.dark .log { background: #0b1018; color: #b0beca; border-color: #333; }
+    body.light .log { background: #f9fafb; color: #111; border-color: #d1d5db; }
+
+    .gift-animation {
+      position: absolute;
+      font-size: 3em;
+      animation: fly 1s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes fly {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-150px) scale(1.4); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <button id="connectBtn">Подключить MetaMask</button>
+      <span id="account"></span>
+      <button id="clearChatBtn" style="background:#f43f5e;">🧹 Очистить чат</button>
+      <button id="changeNickBtn" style="background:#facc15;">✏️ Никнейм</button>
+    </div>
+    <div>
+      ⭐ Звёзды: <span id="stars">10</span>
+      <button id="themeToggle" class="theme-toggle">🌙</button>
+    </div>
+  </div>
+
+  <div class="chatbox">
+    <div class="messages" id="messages"></div>
+
+    <div class="gifts">
+      <div class="gift" data-name="NFT Box">🎁</div>
+      <div class="gift" data-name="NFT Diamond">💎</div>
+      <div class="gift" data-name="NFT Flame">🔥</div>
+    </div>
+
+    <div class="input-area">
+      <input id="msgInput" placeholder="Напиши сообщение..." />
+      <button id="sendBtn">Отправить</button>
+    </div>
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <input type="file" id="avatarInput" accept="image/*" style="display:none" />
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.min.js"></script>
+  <script>
+    const CONTRACT_ADDRESS = "ВАШ_АДРЕС_КОНТРАКТА";
+    const CONTRACT_ABI = [
+      "function mint(address to, string tokenURI) external returns (uint256)",
+      "event Minted(address indexed to, uint256 tokenId, string uri)"
+    ];
+
+    const defaultMyAvatar = "https://i.pravatar.cc/150?img=3";
+    const botAvatar = "https://i.pravatar.cc/150?img=12";
+    let myAvatar = localStorage.getItem("myAvatar") || defaultMyAvatar;
+    let nickname = localStorage.getItem("nickname") || "FrysersYT";
+
+    let provider, signer, contract;
+    let stars = Number(localStorage.getItem("stars")) || 10;
+    const starsEl = document.getElementById("stars");
+    const logEl = document.getElementById("log");
+    const messagesEl = document.getElementById("messages");
+    const input = document.getElementById("msgInput");
+    const avatarInput = document.getElementById("avatarInput");
+    const msgs = JSON.parse(localStorage.getItem("messages") || "[]");
+    starsEl.textContent = stars;
+
+    // --- тема ---
+    let theme = localStorage.getItem("theme") || "dark";
+    document.body.classList.toggle("dark", theme==="dark");
+    document.body.classList.toggle("light", theme==="light");
+    document.getElementById("themeToggle").textContent = theme==="dark" ? "🌙" : "☀️";
+
+    document.getElementById("themeToggle").onclick = () => {
+      theme = theme==="dark" ? "light" : "dark";
+      document.body.classList.toggle("dark", theme==="dark");
+      document.body.classList.toggle("light", theme==="light");
+      document.getElementById("themeToggle").textContent = theme==="dark" ? "🌙" : "☀️";
+      localStorage.setItem("theme", theme);
+
+    };
+
+    // --- никнейм ---
+    document.getElementById("changeNickBtn").onclick = () => {
+      const newNick = prompt("Введите новый никнейм:", nickname);
+      if (newNick && newNick.trim()!=="") {
+        nickname = newNick.trim();
+        localStorage.setItem("nickname", nickname);
+        log(`✏️ Никнейм изменён на: ${nickname}`);
+      }
+    };
+
+    // --- MetaMask ---
+    document.getElementById("connectBtn").onclick = async () => {
+      if (!window.ethereum) return alert("MetaMask не найден.");
+      provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = await provider.getSigner();
+      const acc = await signer.getAddress();
+      document.getElementById("account").textContent = acc.slice(0,6)+"..."+acc.slice(-4);
+      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      log("✅ MetaMask подключён: " + acc);
+    };
+
+    // --- Очистка чата ---
+    document.getElementById("clearChatBtn").onclick = () => {
+      if (confirm("Очистить весь чат?")) {
+        localStorage.removeItem("messages");
+        messagesEl.innerHTML = "";
+        log("🧹 Чат очищен.");
+      }
+    };
+
+    // --- Сообщения ---
+    document.getElementById("sendBtn").onclick = sendMessage;
+    input.addEventListener("keydown", (e) => {
+      if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      renderMessage(text, true);
+      input.value = "";
+      saveMessage({text, me:true});
+      setTimeout(() => {
+        const botReply = "🤖 Бот: получил \""+text+"\"";
+        renderMessage(botReply,false);
+        saveMessage({text:botReply, me:false});
+      },800);
+    }
+
+    function renderMessage(text, me=false) {
+      const div = document.createElement("div");
+      div.className = "message" + (me ? " me" : "");
+      const avatarSrc = me ? myAvatar : botAvatar;
+      const nameTag = me ? `<div style="font-size:12px; color:${theme==='dark'?'#a5b4fc':'#1e3a8a'}">${nickname}</div>` : `<div style="font-size:12px; color:#facc15">Бот</div>`;
+      const avatar = `<div class="avatar" ${me?'id="userAvatar"':''}><img src="${avatarSrc}"></div>`;
+      const bubble = `<div class="bubble">${nameTag}${text}</div>`;
+      div.innerHTML = me ? `${avatar}${bubble}` : `${avatar}${bubble}`;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      if (me && !document.getElementById("userAvatar").dataset.listenerAdded) {
+        document.getElementById("userAvatar").onclick = () => avatarInput.click();
+        document.getElementById("userAvatar").dataset.listenerAdded="true";
+      }
+    }
+
+    msgs.forEach(m=>renderMessage(m.text,m.me));
+    function saveMessage(m){ msgs.push(m); localStorage.setItem("messages", JSON.stringify(msgs)); }
+
+    // --- Подарки ---
+    document.querySelectorAll(".gift").forEach(el=>{
+      el.addEventListener("click", ()=>sendGift(el.dataset.name, el.textContent));
+    });
+
+    async function sendGift(name, emoji) {
+      if(!contract) return alert("Подключи MetaMask!");
+      if(stars<=0) return alert("Недостаточно звёзд!");
+      try{
+        stars--; starsEl.textContent=stars; localStorage.setItem("stars",stars);
+        renderMessage("🎉 Отправлен подарок: "+name,true);
+        saveMessage({text:"🎉 Отправлен подарок: "+name, me:true});
+        animateGift(emoji);
+
+        const metadata={
+          name, description:"NFT-подарок — "+name,
+          image:"data:image/svg+xml;base64,"+
+            btoa(`<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><rect width='100%' height='100%' fill='#0ea5e9'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='48' fill='#fff'>${emoji}</text></svg>`)
+        };
+        const uri = "data:application/json;base64," + btoa(JSON.stringify(metadata));
+        const to = await signer.getAddress();
+        const tx = await contract.mint(to, uri);
+        log("🚀 Минтим NFT: "+tx.hash);
+        await tx.wait();
+        log("✅ NFT подарен успешно!");
+      } catch(err){ log("❌ Ошибка: "+(err.message||err)); console.error(err); }
+    }
+
+    function animateGift(emoji){
+      const elem=document.createElement("div");
+      elem.className="gift-animation";
+      elem.textContent=emoji;
+      document.body.appendChild(elem);
+      elem.style.left="50%"; elem.style.top="80%";
+      setTimeout(()=>elem.remove(),1000);
+    }
+
+    function log(msg){
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent=`[${time}] ${msg}\n`+logEl.textContent;
+    }
+
+    // --- Аватар ---
+    avatarInput.addEventListener("change", (e)=>{
+      const file=e.target.files[0];
+      if(!file) return;
+      const reader=new FileReader();
+      reader.onload=()=>{ myAvatar=reader.result; localStorage.setItem("myAvatar", myAvatar); document.querySelectorAll("#userAvatar img").forEach(img=>img.src=myAvatar); };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
